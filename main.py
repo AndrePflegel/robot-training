@@ -3,6 +3,8 @@ from modules.color_detection import run_color_detection
 from modules.line_detection import run_line_detection
 from modules.multi_color_detection import run_multi_color_detection
 from modules.robot_logic import run_robot_logic
+from modules.digit_prepare import run_digit_prepare
+from modules.digit_recognition import run_digit_recognition
 
 def print_menu():
 	print()
@@ -13,6 +15,8 @@ def print_menu():
 	print("3 - Linienerkennung")
 	print("4 - Mehrfarb-Erkennung")
 	print("5 - Robot-Logik: Linie + Farbe")
+	print("6 - Zahlenerkennung vorbereiten")
+	print("7 - Zahlenerkennung")
 	print("0 - Beenden")
 	print()
 
@@ -32,6 +36,10 @@ def main():
 			run_multi_color_detection()
 		elif choice == "5":
 			run_robot_logic()
+		elif choice == "6":
+			run_digit_prepare()
+		elif choice == "7":
+			run_digit_recognition()
 		elif choice == "0":
 			print("Programm beendet.")
 			break

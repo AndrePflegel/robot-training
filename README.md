@@ -1,22 +1,22 @@
 # Robot Training
 
-Kleines Trainingsprojekt zur Vorbereitung auf ein Robotik-/KI-Projekt mit Python, OpenCV und Kamera.
+Trainingsprojekt zur Vorbereitung auf ein Robotik-/KI-Projekt mit Python, OpenCV, Kamera und einfacher Bilderkennung.
 
-Das Projekt testet grundlegende Bildverarbeitung mit einer Webcam. Die entwickelten Module können später auf einem Raspberry Pi oder einem fahrbaren Roboter eingesetzt werden.
+Das Projekt zeigt Schritt für Schritt, wie ein Kamerabild verarbeitet wird. Es enthält Beispiele für Kamera-Test, Farberkennung, Linienerkennung, kombinierte Roboter-Logik und Zahlenerkennung mit einem trainierten MNIST-Modell.
 
 ---
 
 ## Aktueller Stand
 
-Das Projekt wurde von einzelnen Testdateien zu einer modularen Struktur umgebaut.
+Das Projekt besitzt eine modulare Struktur.
 
-Der Start erfolgt jetzt zentral über:
+Gestartet wird zentral über:
 
 ```bash
-python3 main.py
+python main.py
 ```
 
-Danach kann im Konsolenmenü ausgewählt werden, welches Modul gestartet werden soll.
+Danach kann im Konsolenmenü ein Modul ausgewählt werden.
 
 ---
 
@@ -28,12 +28,6 @@ Modul:
 
 ```text
 modules/cam_test.py
-```
-
-Funktion:
-
-```text
-run_camera_test()
 ```
 
 Beschreibung:
@@ -52,19 +46,13 @@ Modul:
 modules/color_detection.py
 ```
 
-Funktion:
-
-```text
-run_color_detection()
-```
-
 Beschreibung:
 
 - erkennt rote Flächen im Kamerabild
 - erstellt eine Schwarz-Weiß-Maske
-- markiert das größte rote Objekt mit einem Rahmen
-- berechnet den Mittelpunkt des Objekts
-- zeigt an, ob das Objekt links, mittig oder rechts im Bild liegt
+- markiert das größte rote Objekt
+- berechnet den Mittelpunkt
+- zeigt an, ob das Objekt links, mittig oder rechts liegt
 
 ---
 
@@ -76,27 +64,13 @@ Modul:
 modules/line_detection.py
 ```
 
-Funktion:
-
-```text
-run_line_detection()
-```
-
 Beschreibung:
 
-- verwendet nur den unteren Bereich des Kamerabildes
+- wertet nur den unteren Bildbereich aus
 - erkennt schwarze Linien
-- entfernt kleine Störungen durch Filterung
-- markiert die erkannte Linie
+- filtert Störungen
 - berechnet die Position der Linie
-- gibt eine einfache Richtung aus:
-
-```text
-Links lenken
-Rechts lenken
-Geradeaus
-Keine Linie
-```
+- gibt eine einfache Fahrtrichtung aus
 
 ---
 
@@ -108,22 +82,15 @@ Modul:
 modules/multi_color_detection.py
 ```
 
-Funktion:
-
-```text
-run_multi_color_detection()
-```
-
 Beschreibung:
 
-- erkennt mehrere Farben gleichzeitig
-- wertet Rot und Grün aus
-- erzeugt einfache Zustände:
+- erkennt Rot und Grün
+- erzeugt einfache Zustände
 
 ```text
-ROT   -> STOP
-GRUEN -> GO
-KEIN SIGNAL -> WAIT
+Rot   -> STOP
+Gruen -> GO
+Kein Signal -> WAIT
 ```
 
 ---
@@ -136,27 +103,47 @@ Modul:
 modules/robot_logic.py
 ```
 
-Funktion:
+Beschreibung:
+
+- kombiniert Linienerkennung und Farberkennung
+- Rot hat Vorrang und stoppt das System
+- Grün erlaubt das Folgen der Linie
+- ohne Farbsignal wartet das System
+
+---
+
+### 6. Zahlenerkennung vorbereiten
+
+Modul:
 
 ```text
-run_robot_logic()
+modules/digit_prepare.py
 ```
 
 Beschreibung:
 
-- kombiniert Linienerkennung und Farberkennung
-- Farbe hat Vorrang vor der Linie
-- Rot stoppt das System
-- Grün erlaubt das Folgen der Linie
-- ohne Farbsignal wartet das System, zeigt aber weiterhin die erkannte Linienrichtung an
+- schneidet einen Bereich aus dem Kamerabild aus
+- wandelt ihn in Graustufen um
+- erzeugt ein Schwarz-Weiß-Bild
+- skaliert das Ergebnis auf 28x28 Pixel
+- bereitet das Bild für ein MNIST-Modell vor
 
-Logik:
+---
+
+### 7. Zahlenerkennung
+
+Modul:
 
 ```text
-Rot erkannt   -> STOP
-Gruen erkannt -> GO + Linienrichtung
-Keine Farbe   -> WAIT + Linienrichtung
+modules/digit_recognition.py
 ```
+
+Beschreibung:
+
+- lädt ein trainiertes MNIST-Modell
+- verarbeitet den Kamerabereich auf 28x28 Pixel
+- erkennt Zahlen von 0 bis 9
+- zeigt die erkannte Zahl und die Sicherheit an
 
 ---
 
@@ -166,19 +153,30 @@ Keine Farbe   -> WAIT + Linienrichtung
 robot-training/
 ├── main.py
 ├── camera.py
+├── train_digit_model.py
+├── requirements.txt
 ├── README.md
+├── models/
+│   └── digit_model.keras
 ├── modules/
 │   ├── __init__.py
 │   ├── cam_test.py
 │   ├── color_detection.py
 │   ├── line_detection.py
 │   ├── multi_color_detection.py
-│   └── robot_logic.py
+│   ├── robot_logic.py
+│   ├── digit_prepare.py
+│   └── digit_recognition.py
+├── docs/
+│   ├── 01_kamera.md
+│   ├── 02_farberkennung.md
+│   ├── 03_linienerkennung.md
+│   ├── 04_mehrfarb.md
+│   ├── 05_robot_logic.md
+│   ├── 06_main_und_struktur.md
+│   ├── 07_parameter_und_tuning.md
+│   └── 08_zahlenerkennung.md
 └── old/
-    ├── cam_test.py
-    ├── color_detect.py
-    ├── line_detect.py
-    └── multi_color.py
 ```
 
 ---
@@ -192,46 +190,71 @@ git clone https://github.com/AndrePflegel/robot-training.git
 cd robot-training
 ```
 
-### 2. Benötigte Pakete installieren
+### 2. Virtuelle Umgebung erstellen
 
 ```bash
-sudo apt update
-sudo apt install python3 python3-opencv python3-numpy -y
+python3 -m venv venv
 ```
 
-### 3. OpenCV testen
+### 3. Virtuelle Umgebung aktivieren
 
 ```bash
-python3 -c "import cv2; print(cv2.__version__)"
+source venv/bin/activate
 ```
 
-Wenn eine Versionsnummer erscheint, ist OpenCV korrekt installiert.
+Danach sollte im Terminal vorne stehen:
 
-### 4. Kamera prüfen
+```text
+(venv)
+```
+
+### 4. Pakete installieren
 
 ```bash
-ls /dev/video*
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-Die Kamera ist meist unter `/dev/video0` erreichbar.
+### 5. Installation testen
+
+```bash
+python -c "import cv2; print(cv2.__version__)"
+python -c "import tensorflow as tf; print(tf.__version__)"
+```
+
+Wenn Versionsnummern erscheinen, sind OpenCV und TensorFlow korrekt installiert.
 
 ---
 
 ## Start
 
-Das Programm wird über die zentrale `main.py` gestartet:
-
 ```bash
-python3 main.py
+source venv/bin/activate
+python main.py
 ```
 
 Im Menü kann anschließend ein Modul ausgewählt werden.
 
-Beenden eines laufenden Kamerafensters:
+Ein laufendes Kamerafenster wird mit ESC beendet.
+
+---
+
+## MNIST-Modell neu trainieren
+
+Das trainierte Modell liegt unter:
 
 ```text
-ESC
+models/digit_model.keras
 ```
+
+Falls es neu erzeugt werden soll:
+
+```bash
+source venv/bin/activate
+python train_digit_model.py
+```
+
+Danach wird das Modell erneut gespeichert.
 
 ---
 
@@ -243,9 +266,11 @@ Das Projekt folgt diesem Grundprinzip:
 Kamera -> Bild erfassen -> OpenCV verarbeitet Bild -> Ergebnis anzeigen -> Entscheidung treffen
 ```
 
-Die Kamera wird zentral über `camera.py` geöffnet und geschlossen. Die einzelnen Erkennungen liegen getrennt im Ordner `modules`.
+Bei der Zahlenerkennung kommt zusätzlich ein trainiertes Modell dazu:
 
-Dadurch kann das Projekt einfacher erweitert werden, ohne denselben Code immer wieder in mehrere Dateien zu kopieren.
+```text
+Kamera -> Bild vorbereiten -> 28x28 Pixel -> Modell -> erkannte Zahl
+```
 
 ---
 
@@ -254,18 +279,17 @@ Dadurch kann das Projekt einfacher erweitert werden, ohne denselben Code immer w
 Dieses Projekt enthält aktuell:
 
 - keine Motorsteuerung
-- keine selbst trainierten KI-Modelle
-- keine Anbindung an GPIO-Pins
+- keine GPIO-Anbindung
+- keine echte Roboter-Hardware-Steuerung
 
-Es dient als Trainingsprojekt für Bildverarbeitung, einfache Entscheidungslogik und Projektstruktur.
+Es dient als Trainingsprojekt für Bildverarbeitung, einfache Entscheidungslogik, Projektstruktur und erste Nutzung eines trainierten Modells.
 
 ---
 
 ## Mögliche Erweiterungen
 
-- Linienverfolgung weiter verbessern
-- mehrere Farben genauer auswerten
-- Zahlenerkennung integrieren
+- Zahlenerkennung stabilisieren
+- Buchstabenerkennung ergänzen
 - Handgesten erkennen
 - Motorsteuerung für Raspberry Pi ergänzen
 - GPIO-Anbindung vorbereiten
