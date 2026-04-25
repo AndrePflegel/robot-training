@@ -1,4 +1,4 @@
-# Robot Training
+#Robot Training
 
 Kleines Trainingsprojekt zur Vorbereitung auf ein Robotik-/KI-Projekt mit Python, OpenCV und Kamera.
 
