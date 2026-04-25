@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 from camera import open_camera, close_camera
+from modules.digit_result_utils import format_digit_result
 
 
 def run_digit_recognition():
@@ -54,10 +55,7 @@ def run_digit_recognition():
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-        text = f"Zahl: {digit} ({confidence:.2f})"
-
-        if confidence < 0.70:
-            text = "Unsicher"
+        text = format_digit_result(digit, confidence)
 
         cv2.putText(
             frame,
