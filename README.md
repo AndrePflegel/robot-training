@@ -2,171 +2,271 @@
 
 Kleines Trainingsprojekt zur Vorbereitung auf ein Robotik-/KI-Projekt mit Python, OpenCV und Kamera.
 
-Das Projekt testet grundlegende Bildverarbeitung mit einer Webcam.  
-Die entwickelten Module können später auf einem Raspberry Pi oder einem fahrbaren Roboter eingesetzt werden.
+Das Projekt testet grundlegende Bildverarbeitung mit einer Webcam. Die entwickelten Module können später auf einem Raspberry Pi oder einem fahrbaren Roboter eingesetzt werden.
 
 ---
 
 ## Aktueller Stand
 
+Das Projekt wurde von einzelnen Testdateien zu einer modularen Struktur umgebaut.
+
+Der Start erfolgt jetzt zentral über:
+
+```bash
+python3 main.py
+```
+
+Danach kann im Konsolenmenü ausgewählt werden, welches Modul gestartet werden soll.
+
+---
+
+## Funktionen
+
 ### 1. Kamera-Test
 
-Datei:
-cam_test.py
+Modul:
+
+```text
+modules/cam_test.py
+```
 
 Funktion:
+
+```text
+run_camera_test()
+```
+
+Beschreibung:
+
 - öffnet die Webcam
 - zeigt ein Livebild an
 - beendet das Programm mit ESC
 
-Start:
-python3 cam_test.py
-
 ---
 
-### 2. Farberkennung
+### 2. Farberkennung Rot
 
-Datei:
-color_detect.py
+Modul:
+
+```text
+modules/color_detection.py
+```
 
 Funktion:
+
+```text
+run_color_detection()
+```
+
+Beschreibung:
+
 - erkennt rote Flächen im Kamerabild
 - erstellt eine Schwarz-Weiß-Maske
 - markiert das größte rote Objekt mit einem Rahmen
 - berechnet den Mittelpunkt des Objekts
 - zeigt an, ob das Objekt links, mittig oder rechts im Bild liegt
 
-Start:
-python3 color_detect.py
-
-Verwendung:
-Ein rotes Objekt vor die Kamera halten.  
-Das erkannte Objekt wird eingerahmt und klassifiziert (Links / Mitte / Rechts).
-
 ---
 
 ### 3. Linienerkennung
 
-Datei:
-line_detect.py
+Modul:
+
+```text
+modules/line_detection.py
+```
 
 Funktion:
-- verwendet nur den unteren Bereich des Kamerabildes (ROI)
+
+```text
+run_line_detection()
+```
+
+Beschreibung:
+
+- verwendet nur den unteren Bereich des Kamerabildes
 - erkennt schwarze Linien
-- entfernt Störungen durch Filterung
+- entfernt kleine Störungen durch Filterung
+- markiert die erkannte Linie
 - berechnet die Position der Linie
-- gibt eine Fahrtrichtung aus:
+- gibt eine einfache Richtung aus:
 
-Links lenken  
-Rechts lenken  
-Geradeaus  
+```text
+Links lenken
+Rechts lenken
+Geradeaus
 Keine Linie
-
-Start:
-python3 line_detect.py
-
-Verwendung:
-Ein weißes Blatt mit schwarzer Linie oder Klebeband vor die Kamera halten.
+```
 
 ---
 
-### 4. Mehrfarb-Erkennung (Zustände)
+### 4. Mehrfarb-Erkennung
 
-Datei:
-multi_color.py
+Modul:
+
+```text
+modules/multi_color_detection.py
+```
 
 Funktion:
+
+```text
+run_multi_color_detection()
+```
+
+Beschreibung:
+
 - erkennt mehrere Farben gleichzeitig
-- definiert einfache Zustände:
+- wertet Rot und Grün aus
+- erzeugt einfache Zustände:
 
-ROT   → STOP  
-GRÜN  → GO  
-KEIN SIGNAL → WAIT  
-
-Start:
-python3 multi_color.py
-
----
-
-## Installation (Ubuntu / Linux Mint)
-
-### 1. Repository klonen
-
-git clone https://github.com/AndrePflegel/robot-training.git  
-cd robot-training
+```text
+ROT   -> STOP
+GRUEN -> GO
+KEIN SIGNAL -> WAIT
+```
 
 ---
 
-### 2. Benötigte Pakete installieren
+### 5. Robot-Logik
 
-sudo apt update  
-sudo apt install python3 python3-opencv python3-numpy -y
+Modul:
 
----
+```text
+modules/robot_logic.py
+```
 
-### 3. OpenCV testen
+Funktion:
 
-python3 -c "import cv2; print(cv2.__version__)"
+```text
+run_robot_logic()
+```
 
-Wenn eine Versionsnummer erscheint, ist OpenCV korrekt installiert.
+Beschreibung:
 
----
+- kombiniert Linienerkennung und Farberkennung
+- Farbe hat Vorrang vor der Linie
+- Rot stoppt das System
+- Grün erlaubt das Folgen der Linie
+- ohne Farbsignal wartet das System, zeigt aber weiterhin die erkannte Linienrichtung an
 
-### 4. Kamera prüfen
+Logik:
 
-ls /dev/video*
-
-Die Kamera ist meist unter /dev/video0 erreichbar.
-
----
-
-## Bedienung
-
-Alle Programme werden im Terminal gestartet.
-
-Beenden:
-ESC
+```text
+Rot erkannt   -> STOP
+Gruen erkannt -> GO + Linienrichtung
+Keine Farbe   -> WAIT + Linienrichtung
+```
 
 ---
 
 ## Projektstruktur
 
+```text
 robot-training/
-├── cam_test.py
-├── color_detect.py
-├── line_detect.py
-├── multi_color.py
-└── README.md
+├── main.py
+├── camera.py
+├── README.md
+├── modules/
+│   ├── __init__.py
+│   ├── cam_test.py
+│   ├── color_detection.py
+│   ├── line_detection.py
+│   ├── multi_color_detection.py
+│   └── robot_logic.py
+└── old/
+    ├── cam_test.py
+    ├── color_detect.py
+    ├── line_detect.py
+    └── multi_color.py
+```
+
+---
+
+## Installation auf Ubuntu / Linux Mint
+
+### 1. Repository klonen
+
+```bash
+git clone https://github.com/AndrePflegel/robot-training.git
+cd robot-training
+```
+
+### 2. Benötigte Pakete installieren
+
+```bash
+sudo apt update
+sudo apt install python3 python3-opencv python3-numpy -y
+```
+
+### 3. OpenCV testen
+
+```bash
+python3 -c "import cv2; print(cv2.__version__)"
+```
+
+Wenn eine Versionsnummer erscheint, ist OpenCV korrekt installiert.
+
+### 4. Kamera prüfen
+
+```bash
+ls /dev/video*
+```
+
+Die Kamera ist meist unter `/dev/video0` erreichbar.
+
+---
+
+## Start
+
+Das Programm wird über die zentrale `main.py` gestartet:
+
+```bash
+python3 main.py
+```
+
+Im Menü kann anschließend ein Modul ausgewählt werden.
+
+Beenden eines laufenden Kamerafensters:
+
+```text
+ESC
+```
 
 ---
 
 ## Technisches Prinzip
 
-Kamera → Bild erfassen → OpenCV verarbeitet Bild → Ergebnis anzeigen → Entscheidung treffen
+Das Projekt folgt diesem Grundprinzip:
 
-Beispiele:
+```text
+Kamera -> Bild erfassen -> OpenCV verarbeitet Bild -> Ergebnis anzeigen -> Entscheidung treffen
+```
 
-Rotes Objekt links  → Links  
-Rotes Objekt mittig → Mitte  
-Schwarze Linie rechts → Rechts lenken  
+Die Kamera wird zentral über `camera.py` geöffnet und geschlossen. Die einzelnen Erkennungen liegen getrennt im Ordner `modules`.
+
+Dadurch kann das Projekt einfacher erweitert werden, ohne denselben Code immer wieder in mehrere Dateien zu kopieren.
 
 ---
 
 ## Hinweise
 
-Dieses Projekt enthält:
+Dieses Projekt enthält aktuell:
+
 - keine Motorsteuerung
 - keine selbst trainierten KI-Modelle
+- keine Anbindung an GPIO-Pins
 
-Es dient als Trainingsprojekt für Bildverarbeitung und Entscheidungslogik.
+Es dient als Trainingsprojekt für Bildverarbeitung, einfache Entscheidungslogik und Projektstruktur.
 
 ---
 
 ## Mögliche Erweiterungen
 
-- mehrere Farben gleichzeitig auswerten
 - Linienverfolgung weiter verbessern
-- Zahlenerkennung (MNIST / KI-Modell)
+- mehrere Farben genauer auswerten
+- Zahlenerkennung integrieren
 - Handgesten erkennen
-- Motorsteuerung für Raspberry Pi integrieren
-- Kombination aus Linie + Farbe (z. B. STOP bei Rot)
+- Motorsteuerung für Raspberry Pi ergänzen
+- GPIO-Anbindung vorbereiten
+- Klassenstruktur für Kamera, Erkennung und Steuerung einführen
