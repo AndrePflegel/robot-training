@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from modules.line_utils import get_direction_from_center
+from modules.line_contour_utils import get_biggest_valid_contour
 
 
 def decide_action(red_pixels, green_pixels, direction):
@@ -76,24 +77,26 @@ def run_robot_logic():
 
         direction = "Keine Linie"
 
-        if len(contours) > 0:
-            biggest = max(contours, key=cv2.contourArea)
-            area = cv2.contourArea(biggest)
+        contour_data = [
+            (contour, cv2.contourArea(contour))
+            for contour in contours
+        ]
 
-            if area > 800:
-                x, y, w, h = cv2.boundingRect(biggest)
+        biggest = get_biggest_valid_contour(contour_data, min_area=800)
 
-                cx = x + w // 2
-                cy = y + h // 2
+        if biggest is not None:
+            x, y, w, h = cv2.boundingRect(biggest)
 
-                cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.circle(roi, (cx, cy), 6, (255, 0, 0), -1)
+            cx = x + w // 2
+            cy = y + h // 2
 
-                direction = get_direction_from_center(cx, width)
+            cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.circle(roi, (cx, cy), 6, (255, 0, 0), -1)
 
-                last_direction = direction
-            else:
-                direction = last_direction
+            direction = get_direction_from_center(cx, width)
+            last_direction = direction
+        else:
+            direction = last_direction
 
         action = decide_action(red_pixels, green_pixels, direction)
 
