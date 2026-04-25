@@ -1,116 +1,142 @@
 import cv2
 import numpy as np
+from modules.line_utils import get_direction_from_center
+
+
+def decide_action(red_pixels, green_pixels, direction):
+    if red_pixels > 2000:
+        return "STOP"
+
+    if green_pixels > 2000:
+        return "GO: " + direction
+
+    return "WAIT: " + direction
+
 
 def run_robot_logic():
+    cap = cv2.VideoCapture(0)
 
+    last_direction = "Keine Linie"
 
-	cap = cv2.VideoCapture(0)
+    while True:
+        ret, frame = cap.read()
 
-	last_direction = "Keine Linie"
+        if not ret:
+            print("Keine Kamera erkannt")
+            break
 
-	while True:
-		ret, frame = cap.read()
+        height, width = frame.shape[:2]
 
-		if not ret:
-			print("Keine Kamera erkannt")
-			break
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-		height, width = frame.shape[:2]
+        # Rot erkennen
+        lower_red1 = np.array([0, 120, 70])
+        upper_red1 = np.array([10, 255, 255])
+        lower_red2 = np.array([170, 120, 70])
+        upper_red2 = np.array([180, 255, 255])
 
-		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mask_red = cv2.inRange(hsv, lower_red1, upper_red1) + cv2.inRange(
+            hsv,
+            lower_red2,
+            upper_red2
+        )
 
-		#Rot erkennen
-		lower_red1 = np.array([0, 120, 70])
-		upper_red1 = np.array([10, 255, 255])
-		lower_red2 = np.array([170, 120, 70])
-		upper_red2 = np.array([180, 255, 255])
+        # Grün erkennen
+        lower_green = np.array([40, 70, 70])
+        upper_green = np.array([80, 255, 255])
 
-		mask_red = cv2.inRange(hsv, lower_red1, upper_red1) + cv2.inRange(hsv, lower_red2, upper_red2)
+        mask_green = cv2.inRange(hsv, lower_green, upper_green)
 
-		#Grün erkennen
-		lower_green = np.array([40, 70, 70])
-		upper_green = np.array([80, 255, 255])
+        red_pixels = cv2.countNonZero(mask_red)
+        green_pixels = cv2.countNonZero(mask_green)
 
-		mask_green = cv2.inRange(hsv, lower_green, upper_green)
+        # Linienerkennung nur im unteren Bildbereich
+        roi_start = int(height * 0.6)
+        roi = frame[roi_start:height, 0:width]
 
-		red_pixels = cv2.countNonZero(mask_red)
-		green_pixels = cv2.countNonZero(mask_green)
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-		#Linienerkennung nur im unteren Bildbereich
-		roi_start = int(height * 0.6)
-		roi = frame[roi_start:height, 0:width]
+        _, mask_line = cv2.threshold(
+            blur,
+            80,
+            255,
+            cv2.THRESH_BINARY_INV
+        )
 
-		gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-		blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        kernel = np.ones((5, 5), np.uint8)
+        mask_line = cv2.erode(mask_line, kernel, iterations=1)
+        mask_line = cv2.dilate(mask_line, kernel, iterations=2)
 
-		_, mask_line = cv2.threshold(blur, 80, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(
+            mask_line,
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE
+        )
 
-		kernel = np.ones((5, 5), np.uint8)
-		mask_line = cv2.erode(mask_line, kernel, iterations=1)
-		mask_line = cv2.dilate(mask_line, kernel, iterations=2)
+        direction = "Keine Linie"
 
-		contours, _ = cv2.findContours(
-			mask_line,
-			cv2.RETR_EXTERNAL,
-			cv2.CHAIN_APPROX_SIMPLE
-		)
+        if len(contours) > 0:
+            biggest = max(contours, key=cv2.contourArea)
+            area = cv2.contourArea(biggest)
 
-		direction = "Keine Linie"
+            if area > 800:
+                x, y, w, h = cv2.boundingRect(biggest)
 
-		if len(contours) > 0:
-			biggest = max(contours, key=cv2.contourArea)
-			area = cv2.contourArea(biggest)
+                cx = x + w // 2
+                cy = y + h // 2
 
-			if area > 800:
-				x, y, w, h = cv2.boundingRect(biggest)
+                cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.circle(roi, (cx, cy), 6, (255, 0, 0), -1)
 
-				cx = x + w // 2
-				cy = y + h // 2
+                direction = get_direction_from_center(cx, width)
 
-				cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0), 2)
-				cv2.circle(roi, (cx, cy), 6, (255, 0, 0), -1)
+                last_direction = direction
+            else:
+                direction = last_direction
 
-				if cx < width // 3:
-					direction = "Links lenken"
-				elif cx > 2 * width // 3:
-					direction = "Rechts lenken"
-				else:
-					direction = "geradeaus"
+        action = decide_action(red_pixels, green_pixels, direction)
 
-				last_direction = direction
-			else:
-				direction = last_direction
+        # Hilfslinien anzeigen
+        cv2.line(
+            roi,
+            (width // 3, 0),
+            (width // 3, roi.shape[0]),
+            (255, 255, 0),
+            2
+        )
+        cv2.line(
+            roi,
+            (2 * width // 3, 0),
+            (2 * width // 3, roi.shape[0]),
+            (255, 255, 0),
+            2
+        )
+        cv2.line(
+            frame,
+            (0, roi_start),
+            (width, roi_start),
+            (255, 0, 0),
+            2
+        )
 
-		#Entscheidung: farbe hat Vorrang vor Linie
-		if red_pixels > 2000:
-			action = "STOP"
-		elif green_pixels > 2000:
-			action = "GO: " + direction
-		else:
-			action = "WAIT: " + direction
+        cv2.putText(
+            frame,
+            action,
+            (50, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 0, 255),
+            2
+        )
 
-		#Hilfslinien anzeigen
-		cv2.line(roi, (width // 3, 0), (width // 3, roi.shape[0]), (255, 255, 0), 2)
-		cv2.line(roi, (2 * width // 3, 0), (2 * width // 3, roi.shape[0]), (255, 255, 0), 2)
-		cv2.line(frame, (0, roi_start), (width, roi_start), (255, 0, 0), 2)
+        cv2.imshow("Robot Logic", frame)
+        cv2.imshow("Line Mask", mask_line)
+        cv2.imshow("Red Mask", mask_red)
+        cv2.imshow("Green Mask", mask_green)
 
-		cv2.putText(
-			frame,
-			action,
-			(50, 50),
-			cv2.FONT_HERSHEY_SIMPLEX,
-			1,
-			(0, 0, 255),
-			2
-		)
+        if cv2.waitKey(1) == 27:
+            break
 
-		cv2.imshow("Robot Logic", frame)
-		cv2.imshow("Line Mask", mask_line)
-		cv2.imshow("Red Mask", mask_red)
-		cv2.imshow("Green Mask", mask_green)
-
-		if cv2.waitKey(1) == 27:
-			break
-
-	cap.release()
-	cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()

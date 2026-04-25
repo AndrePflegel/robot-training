@@ -1,22 +1,27 @@
 import cv2
 from camera import open_camera, close_camera
 
+
 def run_camera_test():
-	cap = open_camera()
+    cap = open_camera()
 
-	if cap is None:
-		return
+    if cap is None:
+        return
 
-	while True:
-		ret, frame = cap.read()
+    while True:
+        ret, frame = cap.read()
 
-		if not ret:
-			print("Kein Kamerabild erhalten.")
-			break
+        if not ret:
+            print("Kein Kamerabild erhalten.")
+            break
 
-		cv2.imshow("Kamera-test", frame)
+        cv2.imshow("Kamera-Test", frame)
 
-		if cv2.waitKey(1) == 27:
-			break
+        if cv2.waitKey(1) == 27:
+            break
 
-	close_camera(cap)
+    close_camera(cap)
+
+
+if __name__ == "__main__":
+    run_camera_test()
