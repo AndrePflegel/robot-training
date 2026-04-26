@@ -45,10 +45,13 @@ def main():
 			print("Modell auswählen:")
 			print("1 - MNIST")
 			print("2 - Custom")
+			print("3 - Dual: Custom zuerst, sonst MNIST")
 			model_choice = input("Auswahl: ")
 			
 			if model_choice == "2":
 			    run_digit_recognition("custom")
+			elif model_choice == "3":
+			    run_digit_recognition("dual")
 			else:
 			    run_digit_recognition("mnist")
 		elif choice == "8":

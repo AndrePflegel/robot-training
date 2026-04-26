@@ -1,24 +1,38 @@
+from collections import deque
+
 import cv2
 import numpy as np
 
 from camera import open_camera, close_camera
-from modules.digit_result_utils import format_digit_result
-from collections import deque
-from modules.digit_stability_utils import get_stable_digit
-from config.settings import DIGIT_MIN_CONFIDENCE
+from config.settings import (
+    DIGIT_BLUR_KERNEL,
+    DIGIT_MIN_CONFIDENCE,
+    DIGIT_THRESHOLD,
+)
+from modules.digit_dataset_utils import save_digit_correction
 from modules.digit_preprocess_utils import (
     center_digit,
     extract_largest_digit,
     threshold_digit_roi,
 )
-from config.settings import DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
-from modules.digit_dataset_utils import save_digit_correction
+from modules.digit_result_utils import format_digit_result
+from modules.digit_stability_utils import get_stable_digit
 from modules.model_loader import load_digit_model
 
 
 def run_digit_recognition(model_name="mnist"):
-    model = load_digit_model(model_name)
-    print(f"Geladenes Modell: {model_name}")
+    model_mnist = load_digit_model("mnist")
+
+    model_custom = None
+    if model_name in ("custom", "dual"):
+        try:
+            model_custom = load_digit_model("custom")
+            print("Custom-Modell geladen")
+        except FileNotFoundError:
+            print("Kein Custom-Modell gefunden. Nutze MNIST.")
+
+    print(f"Modus: {model_name}")
+
     last_digits = deque(maxlen=10)
 
     cap = open_camera()
@@ -48,21 +62,23 @@ def run_digit_recognition(model_name="mnist"):
             blur_kernel=DIGIT_BLUR_KERNEL,
             threshold_value=DIGIT_THRESHOLD
         )
-        
+
         digit_image = extract_largest_digit(threshold)
-        
+
         if digit_image is None:
             prepared = center_digit(threshold)
         else:
             prepared = center_digit(digit_image)
-            
+
         normalized = prepared / 255.0
         input_image = normalized.reshape(1, 28, 28)
 
-        prediction = model.predict(input_image, verbose=0)
-
-        digit = int(np.argmax(prediction))
-        confidence = float(np.max(prediction))
+        digit, confidence, source = predict_digit(
+            input_image,
+            model_name,
+            model_mnist,
+            model_custom
+        )
 
         preview = cv2.resize(
             prepared,
@@ -74,13 +90,13 @@ def run_digit_recognition(model_name="mnist"):
 
         if confidence >= DIGIT_MIN_CONFIDENCE:
             last_digits.append(digit)
-            
+
         stable_digit = get_stable_digit(list(last_digits))
-        
+
         if stable_digit is None:
             text = "Unsicher"
         else:
-            text = format_digit_result(stable_digit, confidence)
+            text = f"{format_digit_result(stable_digit, confidence)} ({source})"
 
         cv2.putText(
             frame,
@@ -96,17 +112,38 @@ def run_digit_recognition(model_name="mnist"):
         cv2.imshow("Vorbereitet 28x28", preview)
 
         key = cv2.waitKey(1)
-        
+
         if key >= ord("0") and key <= ord("9"):
             label = chr(key)
-            
+
             try:
                 file_path = save_digit_correction(prepared, label)
                 print(f"Gespeichert als {label}: {file_path}")
             except Exception as e:
                 print(f"Fehler beim Speichern: {e}")
-                
+
         if key == 27:
             break
 
     close_camera(cap)
+
+
+def predict_digit(input_image, model_name, model_mnist, model_custom=None):
+    prediction_mnist = model_mnist.predict(input_image, verbose=0)
+    digit_mnist = int(np.argmax(prediction_mnist))
+    confidence_mnist = float(np.max(prediction_mnist))
+
+    if model_name == "mnist" or model_custom is None:
+        return digit_mnist, confidence_mnist, "MNIST"
+
+    prediction_custom = model_custom.predict(input_image, verbose=0)
+    digit_custom = int(np.argmax(prediction_custom))
+    confidence_custom = float(np.max(prediction_custom))
+
+    if model_name == "custom":
+        return digit_custom, confidence_custom, "CUSTOM"
+
+    if confidence_custom >= DIGIT_MIN_CONFIDENCE:
+        return digit_custom, confidence_custom, "CUSTOM"
+
+    return digit_mnist, confidence_mnist, "MNIST"
