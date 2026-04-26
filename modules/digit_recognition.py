@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import tensorflow as tf
 
 from camera import open_camera, close_camera
 from modules.digit_result_utils import format_digit_result
@@ -14,10 +13,11 @@ from modules.digit_preprocess_utils import (
 )
 from config.settings import DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
 from modules.digit_dataset_utils import save_digit_correction
+from modules.model_loader import load_digit_model
 
 
 def run_digit_recognition():
-    model = tf.keras.models.load_model("models/digit_model.keras")
+    model = load_digit_model("mnist")
     last_digits = deque(maxlen=10)
 
     cap = open_camera()
