@@ -2,7 +2,11 @@ import cv2
 import numpy as np
 from camera import open_camera, close_camera
 from config.settings import DIGIT_BOX_SIZE, DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
-from modules.digit_preprocess_utils import threshold_digit_roi, resize_to_mnist
+from modules.digit_preprocess_utils import (
+    extract_largest_digit,
+    resize_to_mnist,
+    threshold_digit_roi
+)
 
 def run_digit_prepare():
     cap = open_camera()
@@ -36,14 +40,27 @@ def run_digit_prepare():
             threshold_value=DIGIT_THRESHOLD
         )
         
-        resized = resize_to_mnist(threshold)
-
-        # Zur Anzeige wieder vergrößern
+        digit = extract_largest_digit(threshold)
+        
+        if digit is None:
+            resized = resize_to_mnist(threshold)
+            digit_preview = threshold
+        else:
+            resized = resize_to_mnist(digit)
+            digit_preview = digit
+            
         preview = cv2.resize(
             (resized * 255).astype("uint8"),
             (280, 280),
             interpolation=cv2.INTER_NEAREST
         )
+        
+        digit_debug = cv2.resize(
+            digit_preview,
+            (280, 280),
+            interpolation=cv2.INTER_NEAREST
+        )
+            
 
         # Rahmen im Originalbild anzeigen
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -61,6 +78,7 @@ def run_digit_prepare():
         cv2.imshow("Original", frame)
         cv2.imshow("Ausschnitt", roi)
         cv2.imshow("Vorbereitet 28x28", preview)
+        cv2.imshow("Isolierte Zahl", digit_debug)
 
         if cv2.waitKey(1) == 27:
             break

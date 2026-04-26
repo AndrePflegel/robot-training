@@ -46,3 +46,28 @@ def extract_largest_digit(threshold_image, min_area=100):
     x, y, w, h = cv2.boundingRect(biggest)
     digit = threshold_image[y:y + h, x:x + w]
     return digit
+    
+def center_digit(image, size=28, padding=4):
+    h, w = image.shape
+
+    # größtes Maß bestimmen
+    max_dim = max(h, w)
+
+    # leeres Quadrat erzeugen
+    square = np.zeros((max_dim, max_dim), dtype=np.uint8)
+
+    # Bild zentriert einfügen
+    y_offset = (max_dim - h) // 2
+    x_offset = (max_dim - w) // 2
+
+    square[y_offset:y_offset + h, x_offset:x_offset + w] = image
+
+    # verkleinern mit Rand
+    new_size = size - 2 * padding
+
+    resized = cv2.resize(square, (new_size, new_size))
+
+    final = np.zeros((size, size), dtype=np.uint8)
+    final[padding:padding + new_size, padding:padding + new_size] = resized
+
+    return final

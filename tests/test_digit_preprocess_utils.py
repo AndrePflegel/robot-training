@@ -2,6 +2,23 @@ import numpy as np
 
 from modules.digit_preprocess_utils import threshold_digit_roi, resize_to_mnist
 from modules.digit_preprocess_utils import extract_largest_digit
+from modules.digit_preprocess_utils import center_digit
+
+
+def test_center_digit_shape():
+    img = np.ones((10, 20), dtype=np.uint8) * 255
+
+    result = center_digit(img)
+
+    assert result.shape == (28, 28)
+
+
+def test_center_digit_not_empty():
+    img = np.ones((10, 20), dtype=np.uint8) * 255
+
+    result = center_digit(img)
+
+    assert result.sum() > 0
 
 
 def test_threshold_digit_roi_shape():
