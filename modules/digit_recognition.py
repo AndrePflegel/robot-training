@@ -8,6 +8,7 @@ from collections import deque
 from modules.digit_stability_utils import get_stable_digit
 
 
+
 def run_digit_recognition():
     model = tf.keras.models.load_model("models/digit_model.keras")
     last_digits = deque(maxlen=10)
