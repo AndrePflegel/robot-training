@@ -1,19 +1,20 @@
 import cv2
-from config.settings import (
-    COLOR_MIN_AREA,
-    GREEN_LOWER,
-    GREEN_UPPER,
-    RED_LOWER_1,
-    RED_LOWER_2,
-    RED_UPPER_1,
-    RED_UPPER_2,
-)
-from modules.color_state_utils import get_color_state
+
 from modules.position_utils import get_horizontal_position
+from modules.profile_loader import load_profiles, get_active_profile
+from modules.color_profile_utils import build_color_masks, apply_color_masks
+
+
+COLOR_MIN_AREA = 1000
 
 
 def run_color_detection():
     cap = cv2.VideoCapture(0)
+
+    data = load_profiles()
+    profile = get_active_profile(data)
+
+    color_masks = build_color_masks(None, profile["colors"])
 
     while True:
         ret, frame = cap.read()
@@ -24,19 +25,33 @@ def run_color_detection():
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        mask_red = create_red_mask(hsv)
-        mask_green = create_green_mask(hsv)
-        mask_combined = mask_red + mask_green
+        results = apply_color_masks(hsv, color_masks)
 
-        red_pixels = cv2.countNonZero(mask_red)
-        green_pixels = cv2.countNonZero(mask_green)
-        state = get_color_state(red_pixels, green_pixels)
+        combined_mask = None
+        active_action = None
 
-        draw_biggest_object(frame, mask_combined)
+        for result in results:
+            if combined_mask is None:
+                combined_mask = result["mask"]
+            else:
+                combined_mask = combined_mask + result["mask"]
+
+            if result["pixels"] > 2000:
+                active_action = result["action"]
+
+        if combined_mask is None:
+            combined_mask = hsv[:, :, 0] * 0  # leere Maske
+
+        draw_biggest_object(frame, combined_mask)
+
+        if active_action is None:
+            text = "WAIT"
+        else:
+            text = active_action
 
         cv2.putText(
             frame,
-            state,
+            text,
             (50, 50),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
@@ -45,26 +60,16 @@ def run_color_detection():
         )
 
         cv2.imshow("Erkennung", frame)
-        cv2.imshow("Maske", mask_combined)
-        cv2.imshow("Red Mask", mask_red)
-        cv2.imshow("Green Mask", mask_green)
+        cv2.imshow("Maske", combined_mask)
+
+        for result in results:
+            cv2.imshow(result["name"], result["mask"])
 
         if cv2.waitKey(1) == 27:
             break
 
     cap.release()
     cv2.destroyAllWindows()
-
-
-def create_red_mask(hsv):
-    mask_red1 = cv2.inRange(hsv, RED_LOWER_1, RED_UPPER_1)
-    mask_red2 = cv2.inRange(hsv, RED_LOWER_2, RED_UPPER_2)
-
-    return mask_red1 + mask_red2
-
-
-def create_green_mask(hsv):
-    return cv2.inRange(hsv, GREEN_LOWER, GREEN_UPPER)
 
 
 def draw_biggest_object(frame, mask):
