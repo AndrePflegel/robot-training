@@ -1,0 +1,74 @@
+{
+  "active_profile": "default",
+
+  "profiles": {
+    "default": {
+      "detectors": {
+        "colors": true,
+        "line": true,
+        "digits": true,
+        "letters": false,
+        "shapes": false,
+        "gestures": false
+      },
+
+      "colors": [
+        {
+          "name": "rot",
+          "lower": [0, 120, 70],
+          "upper": [10, 255, 255],
+          "action": "STOP"
+        },
+        {
+          "name": "rot_2",
+          "lower": [170, 120, 70],
+          "upper": [180, 255, 255],
+          "action": "STOP"
+        },
+        {
+          "name": "gruen",
+          "lower": [40, 70, 70],
+          "upper": [80, 255, 255],
+          "action": "GO"
+        }
+      ],
+
+      "models": {
+        "digits": {
+          "mode": "dual",
+          "available": {
+            "mnist": "models/digit_model.keras",
+            "custom": "models/digit_model_custom.keras"
+          }
+        },
+        "letters": {
+          "mode": "disabled",
+          "available": {}
+        },
+        "shapes": {
+          "mode": "disabled",
+          "available": {}
+        }
+      },
+
+      "actions": {
+        "STOP": "stoppen",
+        "GO": "fahren",
+        "WAIT": "warten",
+        "TURN_LEFT": "links abbiegen",
+        "TURN_RIGHT": "rechts abbiegen",
+        "FORWARD": "geradeaus fahren"
+      },
+
+      "signal_rules": {
+        "line_left": "TURN_LEFT",
+        "line_center": "FORWARD",
+        "line_right": "TURN_RIGHT",
+        "color_rot": "STOP",
+        "color_gruen": "GO",
+        "digit_1": "TURN_LEFT",
+        "digit_2": "TURN_RIGHT"
+      }
+    }
+  }
+}
