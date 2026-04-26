@@ -42,7 +42,15 @@ def main():
 		elif choice == "6":
 			run_digit_prepare()
 		elif choice == "7":
-			run_digit_recognition()
+			print("Modell auswählen:")
+			print("1 - MNIST")
+			print("2 - Custom")
+			model_choice = input("Auswahl: ")
+			
+			if model_choice == "2":
+			    run_digit_recognition("custom")
+			else:
+			    run_digit_recognition("mnist")
 		elif choice == "8":
 			run_tuning_gui()
 		elif choice == "0":

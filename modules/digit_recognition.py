@@ -16,8 +16,9 @@ from modules.digit_dataset_utils import save_digit_correction
 from modules.model_loader import load_digit_model
 
 
-def run_digit_recognition():
-    model = load_digit_model("mnist")
+def run_digit_recognition(model_name="mnist"):
+    model = load_digit_model(model_name)
+    print(f"Geladenes Modell: {model_name}")
     last_digits = deque(maxlen=10)
 
     cap = open_camera()

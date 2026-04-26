@@ -25,3 +25,11 @@ def load_digit_model(model_name="mnist"):
         raise FileNotFoundError(f"Modell nicht gefunden: {model_path}")
 
     return tf.keras.models.load_model(model_path)
+    
+    
+def get_available_models():
+    return [
+        model_name
+        for model_name in MODEL_PATHS
+        if model_exists(model_name)
+    ]
