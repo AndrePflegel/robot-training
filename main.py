@@ -7,6 +7,7 @@ from modules.digit_prepare import run_digit_prepare
 from modules.digit_recognition import run_digit_recognition
 from modules.tuning_panel import run_tuning_panel
 from modules.tuning_gui import run_tuning_gui
+from modules.profile_viewer import run_profile_viewer
 
 def print_menu():
 	print()
@@ -20,6 +21,7 @@ def print_menu():
 	print("6 - Zahlenerkennung vorbereiten")
 	print("7 - Zahlenerkennung")
 	print("8 - Tuning Panel Farben")
+	print("9 - Aktives Profil anzeigen")
 	print("0 - Beenden")
 	print()
 
@@ -56,6 +58,8 @@ def main():
 			    run_digit_recognition("mnist")
 		elif choice == "8":
 			run_tuning_gui()
+		elif choice == "9":
+		    run_profile_viewer()
 		elif choice == "0":
 			print("Programm beendet.")
 			break
