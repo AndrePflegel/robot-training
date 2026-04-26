@@ -2,7 +2,14 @@ import cv2
 import numpy as np
 from modules.line_contour_utils import get_biggest_valid_contour
 from modules.line_utils import get_direction_from_center
-
+from config.settings import (
+	LINE_DILATE_ITERATIONS,
+	LINE_ERODE_ITERATIONS,
+	LINE_KERNEL_SIZE,
+	LINE_MIN_AREA,
+	LINE_ROI_START_RATIO,
+	LINE_THRESHOLD,
+)
 
 def run_line_detection():
     cap = cv2.VideoCapture(0)
@@ -18,17 +25,17 @@ def run_line_detection():
 
         height, width = frame.shape[:2]
 
-        roi_start = int(height * 0.6)
+        roi_start = int(height * LINE_ROI_START_RATIO)
         roi = frame[roi_start:height, 0:width]
 
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-        _, mask = cv2.threshold(blur, 80, 255, cv2.THRESH_BINARY_INV)
+        _, mask = cv2.threshold(blur, LINE_THRESHOLD, 255, cv2.THRESH_BINARY_INV)
 
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv2.erode(mask, kernel, iterations=1)
-        mask = cv2.dilate(mask, kernel, iterations=2)
+        kernel = np.ones((LINE_KERNEL_SIZE, LINE_KERNEL_SIZE), np.uint8)
+        mask = cv2.erode(mask, kernel, iterations=LINE_ERODE_ITERATIONS)
+        mask = cv2.dilate(mask, kernel, iterations=LINE_DILATE_ITERATIONS)
 
         contours, _ = cv2.findContours(
             mask,
@@ -43,7 +50,7 @@ def run_line_detection():
             for contour in contours
         ]
 
-        biggest = get_biggest_valid_contour(contour_data, min_area=800)
+        biggest = get_biggest_valid_contour(contour_data, min_area=LINE_MIN_AREA)
 
         if biggest is not None:
             x, y, w, h = cv2.boundingRect(biggest)
