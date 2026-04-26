@@ -1,22 +1,20 @@
 # Robot Training
 
-Trainingsprojekt zur Vorbereitung auf ein Robotik-/KI-Projekt mit Python, OpenCV, Kamera und einfacher Bilderkennung.
+Trainingsprojekt zur Vorbereitung auf ein Robotik-/KI-Projekt mit Python, OpenCV, Kamera und Bilderkennung.
 
-Das Projekt zeigt Schritt für Schritt, wie ein Kamerabild verarbeitet wird. Es enthält Beispiele für Kamera-Test, Farberkennung, Linienerkennung, kombinierte Roboter-Logik und Zahlenerkennung mit einem trainierten MNIST-Modell.
+Das Projekt zeigt Schritt für Schritt, wie ein Kamerabild verarbeitet wird – von einfacher Farberkennung bis hin zu einer lernfähigen Zahlenerkennung mit mehreren Modellen.
 
 ---
 
 ## Aktueller Stand
 
-Das Projekt besitzt eine modulare Struktur.
-
-Gestartet wird zentral über:
+Das Projekt ist modular aufgebaut und wird über ein Menü gestartet:
 
 ```bash
 python main.py
 ```
 
-Danach kann im Konsolenmenü ein Modul ausgewählt werden.
+Danach kann ein Modul im Konsolenmenü ausgewählt werden.
 
 ---
 
@@ -24,126 +22,143 @@ Danach kann im Konsolenmenü ein Modul ausgewählt werden.
 
 ### 1. Kamera-Test
 
-Modul:
-
-```text
-modules/cam_test.py
-```
-
-Beschreibung:
-
-- öffnet die Webcam
-- zeigt ein Livebild an
-- beendet das Programm mit ESC
+* öffnet die Webcam
+* zeigt das Livebild
+* ESC beendet das Fenster
 
 ---
 
-### 2. Farberkennung Rot
+### 2. Farberkennung (Rot + Grün)
 
-Modul:
-
-```text
-modules/color_detection.py
-```
-
-Beschreibung:
-
-- erkennt rote Flächen im Kamerabild
-- erstellt eine Schwarz-Weiß-Maske
-- markiert das größte rote Objekt
-- berechnet den Mittelpunkt
-- zeigt an, ob das Objekt links, mittig oder rechts liegt
+* erkennt mehrere Farben (konfigurierbar)
+* zeigt Masken
+* berechnet Position im Bild
+* nutzt Parameter aus `config/settings.py`
 
 ---
 
 ### 3. Linienerkennung
 
-Modul:
-
-```text
-modules/line_detection.py
-```
-
-Beschreibung:
-
-- wertet nur den unteren Bildbereich aus
-- erkennt schwarze Linien
-- filtert Störungen
-- berechnet die Position der Linie
-- gibt eine einfache Fahrtrichtung aus
+* analysiert unteren Bildbereich
+* erkennt schwarze Linien
+* filtert Störungen
+* bestimmt Fahrtrichtung
 
 ---
 
-### 4. Mehrfarb-Erkennung
+### 4. Farbzustände (STOP / GO / WAIT)
 
-Modul:
-
-```text
-modules/multi_color_detection.py
-```
-
-Beschreibung:
-
-- erkennt Rot und Grün
-- erzeugt einfache Zustände
-
-```text
-Rot   -> STOP
-Gruen -> GO
-Kein Signal -> WAIT
-```
+* Rot → STOP
+* Grün → GO
+* kein Signal → WAIT
 
 ---
 
 ### 5. Robot-Logik
 
-Modul:
-
-```text
-modules/robot_logic.py
-```
-
-Beschreibung:
-
-- kombiniert Linienerkennung und Farberkennung
-- Rot hat Vorrang und stoppt das System
-- Grün erlaubt das Folgen der Linie
-- ohne Farbsignal wartet das System
+* kombiniert Farbe + Linie
+* priorisiert STOP über Bewegung
+* einfache Entscheidungslogik
 
 ---
 
-### 6. Zahlenerkennung vorbereiten
+### 6. Zahl vorbereiten
 
-Modul:
-
-```text
-modules/digit_prepare.py
-```
-
-Beschreibung:
-
-- schneidet einen Bereich aus dem Kamerabild aus
-- wandelt ihn in Graustufen um
-- erzeugt ein Schwarz-Weiß-Bild
-- skaliert das Ergebnis auf 28x28 Pixel
-- bereitet das Bild für ein MNIST-Modell vor
+* ROI aus Bild schneiden
+* Thresholding
+* größte Kontur extrahieren
+* Zentrierung (MNIST-ähnlich)
+* Ausgabe als 28x28 Bild
 
 ---
 
 ### 7. Zahlenerkennung
 
-Modul:
+Pipeline:
 
 ```text
-modules/digit_recognition.py
+Bild → Threshold → Kontur → Zentrierung → Modell → Ergebnis
 ```
 
-Beschreibung:
+Features:
 
-- lädt ein trainiertes MNIST-Modell
-- verarbeitet den Kamerabereich auf 28x28 Pixel
-- erkennt Zahlen von 0 bis 9
-- zeigt die erkannte Zahl und die Sicherheit an
+* MNIST-Modell (Basis)
+* eigenes Custom-Modell (Fine-Tuning)
+* Dual-Modus (Custom → fallback MNIST)
+* Stabilisierung über mehrere Frames
+* Confidence-Auswertung
+* Debug-Anzeige
+
+Beispiel:
+
+```text
+MNIST: 3 (0.91)
+CUSTOM: 7 (0.42)
+Final: 3 (MNIST)
+```
+
+---
+
+## Lernfähiges System
+
+Während der Laufzeit:
+
+```text
+Taste 0–9 drücken → aktuelles Bild speichern
+```
+
+Speicherort:
+
+```text
+data/corrections/<Zahl>/
+```
+
+Beispiel:
+
+```text
+data/corrections/1/20260426_193012.png
+```
+
+---
+
+## Eigenes Modell trainieren
+
+```bash
+python train_custom_model.py
+```
+
+Dabei passiert:
+
+```text
+MNIST-Modell wird geladen
++ eigene Daten werden ergänzt
+→ neues Modell wird gespeichert
+```
+
+Output:
+
+```text
+models/digit_model_custom.keras
+```
+
+---
+
+## Modell-Auswahl
+
+Im Menü:
+
+```text
+1 → MNIST
+2 → Custom
+3 → Dual (empfohlen)
+```
+
+Dual-Modus:
+
+```text
+Custom wird zuerst genutzt
+wenn unsicher → MNIST übernimmt
+```
 
 ---
 
@@ -154,34 +169,39 @@ robot-training/
 ├── main.py
 ├── camera.py
 ├── train_digit_model.py
+├── train_custom_model.py
 ├── requirements.txt
 ├── README.md
+├── config/
+│   └── settings.py
+├── data/
+│   └── corrections/
 ├── models/
-│   └── digit_model.keras
+│   ├── digit_model.keras
+│   └── digit_model_custom.keras
 ├── modules/
-│   ├── __init__.py
 │   ├── cam_test.py
 │   ├── color_detection.py
 │   ├── line_detection.py
 │   ├── multi_color_detection.py
 │   ├── robot_logic.py
 │   ├── digit_prepare.py
-│   └── digit_recognition.py
-├── docs/
-│   ├── 01_kamera.md
-│   ├── 02_farberkennung.md
-│   ├── 03_linienerkennung.md
-│   ├── 04_mehrfarb.md
-│   ├── 05_robot_logic.md
-│   ├── 06_main_und_struktur.md
-│   ├── 07_parameter_und_tuning.md
-│   └── 08_zahlenerkennung.md
-└── old/
+│   ├── digit_recognition.py
+│   ├── digit_dataset_utils.py
+│   ├── digit_preprocess_utils.py
+│   ├── digit_result_utils.py
+│   ├── digit_stability_utils.py
+│   ├── line_utils.py
+│   ├── line_contour_utils.py
+│   ├── color_state_utils.py
+│   └── model_loader.py
+├── tests/
+└── docs/
 ```
 
 ---
 
-## Installation auf Ubuntu / Linux Mint
+## Installation (Ubuntu / Linux Mint)
 
 ### 1. Repository klonen
 
@@ -202,12 +222,6 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-Danach sollte im Terminal vorne stehen:
-
-```text
-(venv)
-```
-
 ### 4. Pakete installieren
 
 ```bash
@@ -215,14 +229,11 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 5. Installation testen
+### 5. GUI Voraussetzung
 
 ```bash
-python -c "import cv2; print(cv2.__version__)"
-python -c "import tensorflow as tf; print(tf.__version__)"
+sudo apt install python3-tk
 ```
-
-Wenn Versionsnummern erscheinen, sind OpenCV und TensorFlow korrekt installiert.
 
 ---
 
@@ -233,64 +244,59 @@ source venv/bin/activate
 python main.py
 ```
 
-Im Menü kann anschließend ein Modul ausgewählt werden.
-
-Ein laufendes Kamerafenster wird mit ESC beendet.
+ESC beendet Kamerafenster.
 
 ---
 
-## MNIST-Modell neu trainieren
-
-Das trainierte Modell liegt unter:
-
-```text
-models/digit_model.keras
-```
-
-Falls es neu erzeugt werden soll:
+## Tests
 
 ```bash
-source venv/bin/activate
-python train_digit_model.py
+pytest
 ```
-
-Danach wird das Modell erneut gespeichert.
 
 ---
 
 ## Technisches Prinzip
 
-Das Projekt folgt diesem Grundprinzip:
-
 ```text
-Kamera -> Bild erfassen -> OpenCV verarbeitet Bild -> Ergebnis anzeigen -> Entscheidung treffen
+Kamera
+→ Bildverarbeitung (OpenCV)
+→ Feature-Extraktion
+→ Modell (TensorFlow)
+→ Entscheidung
 ```
 
-Bei der Zahlenerkennung kommt zusätzlich ein trainiertes Modell dazu:
+Zahlenerkennung:
 
 ```text
-Kamera -> Bild vorbereiten -> 28x28 Pixel -> Modell -> erkannte Zahl
+ROI → Threshold → Kontur → Zentrierung → 28x28 → Modell
 ```
 
 ---
 
 ## Hinweise
 
-Dieses Projekt enthält aktuell:
+Aktuell KEINE:
 
-- keine Motorsteuerung
-- keine GPIO-Anbindung
-- keine echte Roboter-Hardware-Steuerung
+* Motorsteuerung
+* GPIO
+* Hardware-Anbindung
 
-Es dient als Trainingsprojekt für Bildverarbeitung, einfache Entscheidungslogik, Projektstruktur und erste Nutzung eines trainierten Modells.
+Projekt dient als Trainingsbasis für:
+
+* Bildverarbeitung
+* ML-Grundlagen
+* Softwarestruktur
+* Debugging & Testing
 
 ---
 
 ## Mögliche Erweiterungen
 
-- Zahlenerkennung stabilisieren
-- Buchstabenerkennung ergänzen
-- Handgesten erkennen
-- Motorsteuerung für Raspberry Pi ergänzen
-- GPIO-Anbindung vorbereiten
-- Klassenstruktur für Kamera, Erkennung und Steuerung einführen
+* besseres Modell (CNN)
+* Buchstabenerkennung
+* Objekterkennung
+* erweitertes Tuning-Panel
+* Raspberry Pi Integration
+* echte Robotersteuerung
+

@@ -149,3 +149,20 @@ camera.py liefert Bilder
 modules enthalten Logik
 docs erklären den Code
 ```
+
+---
+
+##Neue Komponenten
+
+Das Projekt enthält jetzt zusätzlich:
+
+-ML-Modelle (models/)
+-Trainingsdaten (data/)
+-Tests (tests/)
+-Konfiguration (config/settings.py)
+
+Diese Struktur erlaubt:
+
+-Erweiterung
+-Training
+-Testbarkeit

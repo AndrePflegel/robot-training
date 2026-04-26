@@ -1,6 +1,6 @@
 # Farberkennung mit OpenCV
 
-Dieses Modul erkennt rote Objekte im Kamerabild.
+Dieses Modul erkennt mehrere Farben (z.B Rot und Grün) im Kamerabild.
 
 ## Grundprinzip
 

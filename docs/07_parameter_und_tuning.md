@@ -487,3 +487,46 @@ Bilddrittel          -> links, mitte oder rechts
 ```
 
 Diese Werte machen das System anpassbar.
+
+---
+
+## Parameter für Zahlenerkennung
+
+### Confidence
+
+```python
+DIGIT_MIN_CONFIDENCE
+
+Bedeutung: wie sicher muss das Modell sein
+
+Kleiner Wert:
+-mehr Ergebnisse
+-aber mehr Fehler
+
+Größerer Wert:
+-weniger Fehler
+-aber öfter "unsicher"
+
+###Bildgröße 
+28x28 Pixel
+
+Warum?
+-entspricht MNIST
+-Modell erwartet genau dieses Format
+
+###Trainingsdaten
+Wichtigster Faktor:
+mehr Daten = besseres Modell
+
+Empfehlung:
+20-50 Bilder pro Zahl
+besser 100+
+
+Dual-Modus
+Custom - wenn sicher
+sonst - MNIST
+
+Dieser Modus ist am stabilsten
+
+---
+

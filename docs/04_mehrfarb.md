@@ -115,3 +115,14 @@ Bild -> Farbe filtern -> Pixel zählen -> Zustand bestimmen
 ```
 
 Das ist eine einfache Form einer Zustandsmaschine.
+
+---
+
+##Erweiterung
+
+Das System kann leicht erweitert werden:
+
+```text
+Blau, Gelb, Orange etc.
+
+Dazu müssen nur neue HSV-Bereiche definiert werden
