@@ -13,6 +13,7 @@ from modules.digit_preprocess_utils import (
     threshold_digit_roi,
 )
 from config.settings import DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
+from modules.digit_dataset_utils import save_digit_correction
 
 
 def run_digit_recognition():
@@ -93,7 +94,18 @@ def run_digit_recognition():
         cv2.imshow("Zahlenerkennung", frame)
         cv2.imshow("Vorbereitet 28x28", preview)
 
-        if cv2.waitKey(1) == 27:
+        key = cv2.waitKey(1)
+        
+        if key >= ord("0") and key <= ord("9"):
+            label = chr(key)
+            
+            try:
+                file_path = save_digit_correction(prepared, label)
+                print(f"Gespeichert als {label}: {file_path}")
+            except Exception as e:
+                print(f"Fehler beim Speichern: {e}")
+                
+        if key == 27:
             break
 
     close_camera(cap)
