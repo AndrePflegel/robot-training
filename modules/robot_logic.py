@@ -1,26 +1,52 @@
 import cv2
 import numpy as np
+
 from modules.line_utils import get_direction_from_center
 from modules.line_contour_utils import get_biggest_valid_contour
+from modules.profile_loader import load_profiles, get_active_profile
+from modules.signal_logic import resolve_action
+from modules.color_profile_utils import build_color_masks, apply_color_masks
 
-
-def decide_action(red_pixels, green_pixels, direction):
-    if red_pixels > 2000:
-        return "STOP"
-
-    if green_pixels > 2000:
-        return "GO: " + direction
-
-    return "WAIT: " + direction
+def decide_action(*args):
+    """
+    Kompatibilität:
+    ALT: decide_action(red_pixels, green_pixels, direction)
+    NEU: decide_action(profile, signals)
+    """
+    
+    #Neue Variante
+    if len(args) == 2:
+        profile, signals = args
+        return resolve_action(profile, signals)
+        
+    #Alte Variante(für Tests)
+    elif len(args) == 3:
+        red_pixels, green_pixels, direction = args
+        
+        if red_pixels > 2000:
+            return "STOP"
+            
+        if green_pixels > 2000:
+            return f"GO: {direction}"
+            
+        return f"WAIT: {direction}"
+        
+    else:
+        raise ValueError("Ungültige Argumente für decide_action()")
 
 
 def run_robot_logic():
     cap = cv2.VideoCapture(0)
 
+    data = load_profiles()
+    profile = get_active_profile(data)
+    color_masks = build_color_masks(None, profile["colors"])
+
     last_direction = "Keine Linie"
 
     while True:
         ret, frame = cap.read()
+        signals = []
 
         if not ret:
             print("Keine Kamera erkannt")
@@ -30,28 +56,14 @@ def run_robot_logic():
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        # Rot erkennen
-        lower_red1 = np.array([0, 120, 70])
-        upper_red1 = np.array([10, 255, 255])
-        lower_red2 = np.array([170, 120, 70])
-        upper_red2 = np.array([180, 255, 255])
+        # Farben auswerten
+        results = apply_color_masks(hsv, color_masks)
 
-        mask_red = cv2.inRange(hsv, lower_red1, upper_red1) + cv2.inRange(
-            hsv,
-            lower_red2,
-            upper_red2
-        )
+        for result in results:
+            if result["pixels"] > 2000:
+                signals.append(f"color_{result['name']}")
 
-        # Grün erkennen
-        lower_green = np.array([40, 70, 70])
-        upper_green = np.array([80, 255, 255])
-
-        mask_green = cv2.inRange(hsv, lower_green, upper_green)
-
-        red_pixels = cv2.countNonZero(mask_red)
-        green_pixels = cv2.countNonZero(mask_green)
-
-        # Linienerkennung nur im unteren Bildbereich
+        # Linienerkennung
         roi_start = int(height * 0.6)
         roi = frame[roi_start:height, 0:width]
 
@@ -75,8 +87,6 @@ def run_robot_logic():
             cv2.CHAIN_APPROX_SIMPLE
         )
 
-        direction = "Keine Linie"
-
         contour_data = [
             (contour, cv2.contourArea(contour))
             for contour in contours
@@ -98,9 +108,18 @@ def run_robot_logic():
         else:
             direction = last_direction
 
-        action = decide_action(red_pixels, green_pixels, direction)
+        # Linien-Signal erzeugen
+        if direction == "Links lenken":
+            signals.append("line_left")
+        elif direction == "Rechts lenken":
+            signals.append("line_right")
+        elif direction == "Geradeaus":
+            signals.append("line_center")
 
-        # Hilfslinien anzeigen
+        # Entscheidung aus Profil
+        action = resolve_action(profile, signals)
+
+        # Visualisierung
         cv2.line(
             roi,
             (width // 3, 0),
@@ -135,8 +154,9 @@ def run_robot_logic():
 
         cv2.imshow("Robot Logic", frame)
         cv2.imshow("Line Mask", mask_line)
-        cv2.imshow("Red Mask", mask_red)
-        cv2.imshow("Green Mask", mask_green)
+
+        for result in results:
+            cv2.imshow(result["name"], result["mask"])
 
         if cv2.waitKey(1) == 27:
             break
