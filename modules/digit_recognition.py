@@ -7,6 +7,12 @@ from modules.digit_result_utils import format_digit_result
 from collections import deque
 from modules.digit_stability_utils import get_stable_digit
 from config.settings import DIGIT_MIN_CONFIDENCE
+from modules.digit_preprocess_utils import (
+    center_digit,
+    extract_largest_digit,
+    threshold_digit_roi,
+)
+from config.settings import DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
 
 
 def run_digit_recognition():
@@ -35,19 +41,20 @@ def run_digit_recognition():
 
         roi = frame[y1:y2, x1:x2]
 
-        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (5, 5), 0)
-
-        _, threshold = cv2.threshold(
-            blur,
-            100,
-            255,
-            cv2.THRESH_BINARY_INV
+        threshold = threshold_digit_roi(
+            roi,
+            blur_kernel=DIGIT_BLUR_KERNEL,
+            threshold_value=DIGIT_THRESHOLD
         )
-
-        resized = cv2.resize(threshold, (28, 28))
-        normalized = resized / 255.0
-
+        
+        digit_image = extract_largest_digit(threshold)
+        
+        if digit_image is None:
+            prepared = center_digit(threshold)
+        else:
+            prepared = center_digit(digit_image)
+            
+        normalized = prepared / 255.0
         input_image = normalized.reshape(1, 28, 28)
 
         prediction = model.predict(input_image, verbose=0)
@@ -55,7 +62,11 @@ def run_digit_recognition():
         digit = int(np.argmax(prediction))
         confidence = float(np.max(prediction))
 
-        preview = cv2.resize(resized, (280, 280), interpolation=cv2.INTER_NEAREST)
+        preview = cv2.resize(
+            prepared,
+            (280, 280),
+            interpolation=cv2.INTER_NEAREST
+        )
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
