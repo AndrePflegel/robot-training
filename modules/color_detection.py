@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from modules.position_utils import get_horizontal_position
+from config.settings import RED_LOWER_1, RED_UPPER_1, RED_LOWER_2, RED_UPPER_2, COLOR_MIN_AREA
 
 
 def run_color_detection():
@@ -15,14 +16,9 @@ def run_color_detection():
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        lower_red1 = np.array([0, 120, 70])
-        upper_red1 = np.array([10, 255, 255])
 
-        lower_red2 = np.array([170, 120, 70])
-        upper_red2 = np.array([180, 255, 255])
-
-        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+        mask1 = cv2.inRange(hsv, RED_LOWER_1, RED_UPPER_1)
+        mask2 = cv2.inRange(hsv, RED_LOWER_2, RED_UPPER_2)
         mask = mask1 + mask2
 
         contours, _ = cv2.findContours(
@@ -35,7 +31,7 @@ def run_color_detection():
             biggest = max(contours, key=cv2.contourArea)
             area = cv2.contourArea(biggest)
 
-            if area > 1000:
+            if area > COLOR_MIN_AREA:
                 x, y, w, h = cv2.boundingRect(biggest)
 
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
