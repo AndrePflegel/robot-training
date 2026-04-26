@@ -3,8 +3,8 @@ import numpy as np
 from camera import open_camera, close_camera
 from config.settings import DIGIT_BOX_SIZE, DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
 from modules.digit_preprocess_utils import (
+    center_digit,
     extract_largest_digit,
-    resize_to_mnist,
     threshold_digit_roi
 )
 
@@ -43,14 +43,14 @@ def run_digit_prepare():
         digit = extract_largest_digit(threshold)
         
         if digit is None:
-            resized = resize_to_mnist(threshold)
+            prepared = center_digit(threshold)
             digit_preview = threshold
         else:
-            resized = resize_to_mnist(digit)
+            prepared = center_digit(digit)
             digit_preview = digit
             
         preview = cv2.resize(
-            (resized * 255).astype("uint8"),
+            prepared,
             (280, 280),
             interpolation=cv2.INTER_NEAREST
         )
