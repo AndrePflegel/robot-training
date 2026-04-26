@@ -35,3 +35,18 @@ def test_line_kernel_size_positive():
 
 def test_line_min_area_positive():
     assert settings.LINE_MIN_AREA > 0
+    
+def test_digit_box_size_positive():
+    assert settings.DIGIT_BOX_SIZE > 0
+
+
+def test_digit_blur_kernel_valid():
+    assert settings.DIGIT_BLUR_KERNEL % 2 == 1
+
+
+def test_digit_threshold_valid():
+    assert 0 <= settings.DIGIT_THRESHOLD <= 255
+
+
+def test_digit_confidence_range():
+    assert 0 <= settings.DIGIT_MIN_CONFIDENCE <= 1

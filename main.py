@@ -5,6 +5,8 @@ from modules.multi_color_detection import run_multi_color_detection
 from modules.robot_logic import run_robot_logic
 from modules.digit_prepare import run_digit_prepare
 from modules.digit_recognition import run_digit_recognition
+from modules.tuning_panel import run_tuning_panel
+from modules.tuning_gui import run_tuning_gui
 
 def print_menu():
 	print()
@@ -17,6 +19,7 @@ def print_menu():
 	print("5 - Robot-Logik: Linie + Farbe")
 	print("6 - Zahlenerkennung vorbereiten")
 	print("7 - Zahlenerkennung")
+	print("8 - Tuning Panel Farben")
 	print("0 - Beenden")
 	print()
 
@@ -40,6 +43,8 @@ def main():
 			run_digit_prepare()
 		elif choice == "7":
 			run_digit_recognition()
+		elif choice == "8":
+			run_tuning_gui()
 		elif choice == "0":
 			print("Programm beendet.")
 			break

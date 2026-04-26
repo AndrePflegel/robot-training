@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from camera import open_camera, close_camera
-
+from config.settings import DIGIT_BOX_SIZE, DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
 
 def run_digit_prepare():
     cap = open_camera()
@@ -19,7 +19,7 @@ def run_digit_prepare():
         height, width = frame.shape[:2]
 
         # Bereich in der Mitte des Bildes festlegen
-        box_size = 220
+        box_size = DIGIT_BOX_SIZE
         x1 = width // 2 - box_size // 2
         y1 = height // 2 - box_size // 2
         x2 = width // 2 + box_size // 2
@@ -32,12 +32,12 @@ def run_digit_prepare():
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
         # Weichzeichnen gegen Bildrauschen
-        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        blur = cv2.GaussianBlur(gray, (DIGIT_BLUR_KERNEL, DIGIT_BLUR_KERNEL), 0)
 
         # In Schwarz-Weiß umwandeln
         _, threshold = cv2.threshold(
             blur,
-            100,
+            DIGIT_THRESHOLD,
             255,
             cv2.THRESH_BINARY_INV
         )

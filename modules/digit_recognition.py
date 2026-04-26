@@ -6,7 +6,7 @@ from camera import open_camera, close_camera
 from modules.digit_result_utils import format_digit_result
 from collections import deque
 from modules.digit_stability_utils import get_stable_digit
-
+from config.settings import DIGIT_MIN_CONFIDENCE
 
 
 def run_digit_recognition():
@@ -59,7 +59,7 @@ def run_digit_recognition():
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-        if confidence >= 0.70:
+        if confidence >= DIGIT_MIN_CONFIDENCE:
             last_digits.append(digit)
             
         stable_digit = get_stable_digit(list(last_digits))
