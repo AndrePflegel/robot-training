@@ -27,7 +27,7 @@ def resize_to_mnist(image):
 
     return normalized
     
-def extract_largest_digit(threshold_image, min_area=100):
+def extract_largest_digit(threshold_image, min_area=100, padding=5):
     contours, _ = cv2.findContours(
         threshold_image,
         cv2.RETR_EXTERNAL,
@@ -44,7 +44,15 @@ def extract_largest_digit(threshold_image, min_area=100):
         return None
         
     x, y, w, h = cv2.boundingRect(biggest)
+
+    #Padding hinzufügen
+    x = max(0, x - padding)
+    y = max(0, y - padding)
+    w = min(threshold_image.shape[1] - x, w + 2 * padding)
+    h = min(threshold_image.shape[0] - y, h + 2 * padding)
+    
     digit = threshold_image[y:y + h, x:x + w]
+
     return digit
     
 def center_digit(image, size=28, padding=4):
