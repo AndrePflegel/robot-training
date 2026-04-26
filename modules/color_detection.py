@@ -1,7 +1,15 @@
 import cv2
 import numpy as np
 from modules.position_utils import get_horizontal_position
-from config.settings import RED_LOWER_1, RED_UPPER_1, RED_LOWER_2, RED_UPPER_2, COLOR_MIN_AREA
+from config.settings import (
+    RED_LOWER_1,
+    RED_UPPER_1,
+    RED_LOWER_2,
+    RED_UPPER_2,
+    GREEN_LOWER,
+    GREEN_UPPER,
+    COLOR_MIN_AREA
+)
 
 
 def run_color_detection():
@@ -16,10 +24,16 @@ def run_color_detection():
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+        # ROT
+        mask_red1 = cv2.inRange(hsv, RED_LOWER_1, RED_UPPER_1)
+        mask_red2 = cv2.inRange(hsv, RED_LOWER_2, RED_UPPER_2)
+        mask_red = mask_red1 + mask_red2
 
-        mask1 = cv2.inRange(hsv, RED_LOWER_1, RED_UPPER_1)
-        mask2 = cv2.inRange(hsv, RED_LOWER_2, RED_UPPER_2)
-        mask = mask1 + mask2
+        # GRÜN
+        mask_green = cv2.inRange(hsv, GREEN_LOWER, GREEN_UPPER)
+
+        # Kombination
+        mask = mask_red + mask_green
 
         contours, _ = cv2.findContours(
             mask,
@@ -46,7 +60,7 @@ def run_color_detection():
 
                 cv2.putText(
                     frame,
-                    "Rot erkannt",
+                    "Objekt erkannt",
                     (x, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6,
@@ -66,6 +80,8 @@ def run_color_detection():
 
         cv2.imshow("Erkennung", frame)
         cv2.imshow("Maske", mask)
+        cv2.imshow("Red Mask", mask_red)
+        cv2.imshow("Green Mask", mask_green)
 
         if cv2.waitKey(1) == 27:
             break

@@ -7,4 +7,7 @@ RED_UPPER_1 = np.array([10, 255, 255])
 RED_LOWER_2 = np.array([170, 120, 70])
 RED_UPPER_2 = np.array([180, 255, 255])
 
+GREEN_LOWER = np.array([40, 70, 70])
+GREEN_UPPER = np.array([80, 255, 255])
+
 COLOR_MIN_AREA = 1000
