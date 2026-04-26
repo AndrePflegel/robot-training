@@ -26,3 +26,23 @@ def resize_to_mnist(image):
     normalized = resized / 255.0
 
     return normalized
+    
+def extract_largest_digit(threshold_image, min_area=100):
+    contours, _ = cv2.findContours(
+        threshold_image,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+    
+    if not contours:
+        return None
+        
+    biggest = max(contours, key=cv2.contourArea)
+    area = cv2.contourArea(biggest)
+    
+    if area < min_area:
+        return None
+        
+    x, y, w, h = cv2.boundingRect(biggest)
+    digit = threshold_image[y:y + h, x:x + w]
+    return digit
