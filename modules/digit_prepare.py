@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from camera import open_camera, close_camera
 from config.settings import DIGIT_BOX_SIZE, DIGIT_BLUR_KERNEL, DIGIT_THRESHOLD
+from modules.digit_preprocess_utils import threshold_digit_roi, resize_to_mnist
 
 def run_digit_prepare():
     cap = open_camera()
@@ -29,24 +30,20 @@ def run_digit_prepare():
         roi = frame[y1:y2, x1:x2]
 
         # In Graustufen umwandeln
-        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-        # Weichzeichnen gegen Bildrauschen
-        blur = cv2.GaussianBlur(gray, (DIGIT_BLUR_KERNEL, DIGIT_BLUR_KERNEL), 0)
-
-        # In Schwarz-Weiß umwandeln
-        _, threshold = cv2.threshold(
-            blur,
-            DIGIT_THRESHOLD,
-            255,
-            cv2.THRESH_BINARY_INV
+        threshold = threshold_digit_roi(
+            roi,
+            blur_kernel=DIGIT_BLUR_KERNEL,
+            threshold_value=DIGIT_THRESHOLD
         )
-
-        # Auf MNIST-Größe bringen
-        resized = cv2.resize(threshold, (28, 28))
+        
+        resized = resize_to_mnist(threshold)
 
         # Zur Anzeige wieder vergrößern
-        preview = cv2.resize(resized, (280, 280), interpolation=cv2.INTER_NEAREST)
+        preview = cv2.resize(
+            (resized * 255).astype("uint8"),
+            (280, 280),
+            interpolation=cv2.INTER_NEAREST
+        )
 
         # Rahmen im Originalbild anzeigen
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
