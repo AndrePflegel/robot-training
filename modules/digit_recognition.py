@@ -73,12 +73,16 @@ def run_digit_recognition(model_name="mnist"):
         normalized = prepared / 255.0
         input_image = normalized.reshape(1, 28, 28)
 
-        digit, confidence, source = predict_digit(
+        result_info = predict_digit(
             input_image,
             model_name,
             model_mnist,
             model_custom
         )
+        
+        digit = result_info["final_digit"]
+        confidence = result_info["final_confidence"]
+        source = result_info["source"]
 
         preview = cv2.resize(
             prepared,
@@ -98,15 +102,36 @@ def run_digit_recognition(model_name="mnist"):
         else:
             text = f"{format_digit_result(stable_digit, confidence)} ({source})"
 
+        mnist_text = (
+            f"MNIST: {result_info['mnist_digit']} "
+            f"({result_info['mnist_confidence']:.2f})"
+        )
+
         cv2.putText(
             frame,
-            text,
-            (30, 40),
+            mnist_text,
+            (30, 80),
             cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 0, 255),
+            0.7,
+            (255, 0, 0),
             2
         )
+        
+        if result_info["custom_digit"] is not None:
+            custom_text = (
+                f"CUSTOM: {result_info['custom_digit']} "
+                f"({result_info['custom_confidence']:.2f})"
+            )
+            
+            cv2.putText(
+                frame,
+                custom_text,
+                (30, 115),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 128, 255),
+                2
+            )
 
         cv2.imshow("Zahlenerkennung", frame)
         cv2.imshow("Vorbereitet 28x28", preview)
@@ -133,17 +158,35 @@ def predict_digit(input_image, model_name, model_mnist, model_custom=None):
     digit_mnist = int(np.argmax(prediction_mnist))
     confidence_mnist = float(np.max(prediction_mnist))
 
+    result_info = {
+        "mnist_digit": digit_mnist,
+        "mnist_confidence": confidence_mnist,
+        "custom_digit": None,
+        "custom_confidence": None,
+        "final_digit": digit_mnist,
+        "final_confidence": confidence_mnist,
+        "source": "MNIST",
+    }
+
     if model_name == "mnist" or model_custom is None:
-        return digit_mnist, confidence_mnist, "MNIST"
+        return result_info
 
     prediction_custom = model_custom.predict(input_image, verbose=0)
     digit_custom = int(np.argmax(prediction_custom))
     confidence_custom = float(np.max(prediction_custom))
 
+    result_info["custom_digit"] = digit_custom
+    result_info["custom_confidence"] = confidence_custom
+
     if model_name == "custom":
-        return digit_custom, confidence_custom, "CUSTOM"
+        result_info["final_digit"] = digit_custom
+        result_info["final_confidence"] = confidence_custom
+        result_info["source"] = "CUSTOM"
+        return result_info
 
     if confidence_custom >= DIGIT_MIN_CONFIDENCE:
-        return digit_custom, confidence_custom, "CUSTOM"
+        result_info["final_digit"] = digit_custom
+        result_info["final_confidence"] = confidence_custom
+        result_info["source"] = "CUSTOM"
 
-    return digit_mnist, confidence_mnist, "MNIST"
+    return result_info
