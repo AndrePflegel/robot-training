@@ -7,14 +7,10 @@ from modules.color_profile_utils import detect_target_color
 from modules.boundary_detection import detect_boundary_line
 from modules.motor_control import execute_action, stop_all
 from modules.mission_control import MissionController
+from modules.gesture_detection import detect_finger_count
 
 
 def decide_action(*args):
-    """
-    Kompatibilität:
-    ALT: decide_action(red_pixels, green_pixels, direction)
-    NEU: decide_action(profile, signals)
-    """
     if len(args) == 2:
         profile, signals = args
         return resolve_action(profile, signals)
@@ -104,6 +100,46 @@ def get_boundary_action(boundary):
     return "DRIVE_FORWARD_SLOW"
 
 
+def handle_mode_key(key, mission, action_history):
+    if key == ord("1"):
+        mission.set_mode(1)
+        action_history.clear()
+        print("MODE 1 aktiviert")
+
+    elif key == ord("2"):
+        mission.set_mode(2)
+        action_history.clear()
+        print("MODE 2 aktiviert")
+
+    elif key == ord("3"):
+        mission.set_mode(3)
+        action_history.clear()
+        print("MODE 3 aktiviert")
+
+
+def handle_gesture_mode(frame, mission, action_history, gesture_buffer, gesture_mode_locked):
+    if gesture_mode_locked:
+        return gesture_mode_locked, 0
+
+    fingers = detect_finger_count(frame)
+
+    if fingers in [1, 2, 3]:
+        gesture_buffer.append(fingers)
+
+        if len(gesture_buffer) > 10:
+            gesture_buffer.pop(0)
+
+        most_common = max(set(gesture_buffer), key=gesture_buffer.count)
+
+        if gesture_buffer.count(most_common) > 6:
+            mission.set_mode(most_common)
+            action_history.clear()
+            gesture_mode_locked = True
+            print(f"GESTURE MODE {most_common} stabil erkannt")
+
+    return gesture_mode_locked, fingers
+
+
 def run_robot_logic():
     cap = cv2.VideoCapture(0)
 
@@ -117,14 +153,12 @@ def run_robot_logic():
         return
 
     action_history = []
+    gesture_buffer = []
+    gesture_mode_locked = False
+    last_fingers = 0
 
     mission = MissionController()
-
-    # TEST: später durch Handgesten ersetzen
-    # 1 = grün
-    # 2 = rot -> blau
-    # 3 = rot -> grün -> blau
-    mission.set_mode(2)
+    mission.set_mode(2)  # Default: rot -> blau, später durch Geste ersetzt
 
     while True:
         ret, frame = cap.read()
@@ -135,6 +169,14 @@ def run_robot_logic():
 
         height, width = frame.shape[:2]
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        gesture_mode_locked, last_fingers = handle_gesture_mode(
+            frame,
+            mission,
+            action_history,
+            gesture_buffer,
+            gesture_mode_locked
+        )
 
         current_target_name = mission.get_current_target()
 
@@ -153,9 +195,37 @@ def run_robot_logic():
                 2
             )
 
+            cv2.putText(
+                frame,
+                f"MODE: {mission.mode} TARGET: none",
+                (30, 80),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (255, 255, 0),
+                2
+            )
+
+            cv2.putText(
+                frame,
+                f"GESTURE locked={gesture_mode_locked} fingers={last_fingers}",
+                (30, 115),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (255, 255, 0),
+                2
+            )
+
             cv2.imshow("Robot Logic", frame)
 
             key = cv2.waitKey(1)
+
+            handle_mode_key(key, mission, action_history)
+
+            if key == ord("r"):
+                gesture_mode_locked = False
+                gesture_buffer.clear()
+                print("GESTURE RESET")
+
             if key == 27:
                 stop_all()
                 break
@@ -182,6 +252,14 @@ def run_robot_logic():
             cv2.imshow("Robot Logic", frame)
 
             key = cv2.waitKey(1)
+
+            handle_mode_key(key, mission, action_history)
+
+            if key == ord("r"):
+                gesture_mode_locked = False
+                gesture_buffer.clear()
+                print("GESTURE RESET")
+
             if key == 27:
                 stop_all()
                 break
@@ -278,6 +356,16 @@ def run_robot_logic():
 
         cv2.putText(
             frame,
+            f"GESTURE locked={gesture_mode_locked} fingers={last_fingers}",
+            (30, 165),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (255, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            frame,
             f"ACTION: {action}",
             (30, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -302,6 +390,13 @@ def run_robot_logic():
             cv2.imshow("Boundary Line Mask", boundary["debug_mask"])
 
         key = cv2.waitKey(1)
+
+        handle_mode_key(key, mission, action_history)
+
+        if key == ord("r"):
+            gesture_mode_locked = False
+            gesture_buffer.clear()
+            print("GESTURE RESET")
 
         if key == 27:
             stop_all()
