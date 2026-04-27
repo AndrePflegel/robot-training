@@ -46,3 +46,8 @@ def execute_action(action):
         last_action = action
 
     return left_speed, right_speed
+
+
+def stop_all():
+    print("[MOTOR] STOP ALL")
+    return 0, 0

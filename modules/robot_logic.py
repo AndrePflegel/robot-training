@@ -5,7 +5,8 @@ from modules.profile_loader import load_profiles, get_active_profile
 from modules.signal_logic import resolve_action
 from modules.color_profile_utils import detect_target_color
 from modules.boundary_detection import detect_boundary_line
-from modules.motor_control import execute_action
+from modules.motor_control import execute_action, stop_all
+from modules.mission_control import MissionController
 
 
 def decide_action(*args):
@@ -31,8 +32,6 @@ def decide_action(*args):
 
     else:
         raise ValueError("Ungültige Argumente für decide_action()")
-        
-
 
 
 def find_color_config(profile, names):
@@ -54,10 +53,6 @@ def smooth_action(action_history, new_action, history_size=5):
 
 
 def get_soft_target_action(target, frame_width):
-    """
-    Macht aus der groben Richtung eine weichere Lenkentscheidung.
-    Je weiter das Ziel vom Mittelpunkt entfernt ist, desto stärker wird gelenkt.
-    """
     cx = target["cx"]
     center_x = frame_width // 2
     offset = cx - center_x
@@ -80,9 +75,6 @@ def get_soft_target_action(target, frame_width):
 
 
 def get_boundary_action(boundary):
-    """
-    Übersetzt erkannte Begrenzungsgeometrie in eine weiche Aktion.
-    """
     if not boundary["found"]:
         return None
 
@@ -118,18 +110,21 @@ def run_robot_logic():
     data = load_profiles()
     profile = get_active_profile(data)
 
-    target_color = find_color_config(profile, ["green", "gruen", "grün"])
     boundary_color = find_color_config(profile, ["yellow", "gelb"])
-
-    if target_color is None:
-        print("Keine Ziel-Farbe grün im Profil gefunden.")
-        return
 
     if boundary_color is None:
         print("Keine Begrenzungs-Farbe gelb im Profil gefunden.")
         return
 
     action_history = []
+
+    mission = MissionController()
+
+    # TEST: später durch Handgesten ersetzen
+    # 1 = grün
+    # 2 = rot -> blau
+    # 3 = rot -> grün -> blau
+    mission.set_mode(2)
 
     while True:
         ret, frame = cap.read()
@@ -141,21 +136,77 @@ def run_robot_logic():
         height, width = frame.shape[:2]
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+        current_target_name = mission.get_current_target()
+
+        if current_target_name is None:
+            raw_action = "STOP"
+            action = smooth_action(action_history, raw_action, history_size=5)
+            execute_action(action)
+
+            cv2.putText(
+                frame,
+                "MISSION FINISHED",
+                (30, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 0, 255),
+                2
+            )
+
+            cv2.imshow("Robot Logic", frame)
+
+            key = cv2.waitKey(1)
+            if key == 27:
+                stop_all()
+                break
+
+            continue
+
+        target_color = find_color_config(profile, [current_target_name])
+
+        if target_color is None:
+            raw_action = "STOP"
+            action = smooth_action(action_history, raw_action, history_size=5)
+            execute_action(action)
+
+            cv2.putText(
+                frame,
+                f"Ziel-Farbe fehlt im Profil: {current_target_name}",
+                (30, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 0, 255),
+                2
+            )
+
+            cv2.imshow("Robot Logic", frame)
+
+            key = cv2.waitKey(1)
+            if key == 27:
+                stop_all()
+                break
+
+            continue
+
         boundary = detect_boundary_line(hsv, width, height, boundary_color)
         target = detect_target_color(hsv, width, target_color)
 
-        boundary_action = get_boundary_action(boundary)
-
-        if boundary_action is not None:
-            raw_action = boundary_action
-        elif target["found"]:
-            raw_action = get_soft_target_action(target, width)
+        if target["found"] and target["area"] > 4000:
+            mission.target_reached()
+            action_history.clear()
+            raw_action = "STOP"
         else:
-            raw_action = "SEARCH_TARGET_SLOW_TURN"
+            boundary_action = get_boundary_action(boundary)
+
+            if boundary_action is not None:
+                raw_action = boundary_action
+            elif target["found"]:
+                raw_action = get_soft_target_action(target, width)
+            else:
+                raw_action = "SEARCH_TARGET_SLOW_TURN"
 
         action = smooth_action(action_history, raw_action, history_size=5)
-        
-        #Motor-Mapping testen
+
         execute_action(action)
 
         roi_y = boundary.get("roi_start_y", int(height * 0.35))
@@ -199,7 +250,12 @@ def run_robot_logic():
             cv2.line(frame, (int(width * 0.25), 0), (int(width * 0.25), height), (120, 120, 120), 1)
             cv2.line(frame, (int(width * 0.75), 0), (int(width * 0.75), height), (120, 120, 120), 1)
 
-            target_text = f"TARGET area={int(target['area'])} cx={target['cx']}"
+            target_text = (
+                f"TARGET {current_target_name} "
+                f"area={int(target['area'])} "
+                f"cx={target['cx']}"
+            )
+
             cv2.putText(
                 frame,
                 target_text,
@@ -209,6 +265,16 @@ def run_robot_logic():
                 (0, 255, 0),
                 2
             )
+
+        cv2.putText(
+            frame,
+            f"MODE: {mission.mode} TARGET: {current_target_name}",
+            (30, 135),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 0),
+            2
+        )
 
         cv2.putText(
             frame,
@@ -235,7 +301,10 @@ def run_robot_logic():
         if "debug_mask" in boundary:
             cv2.imshow("Boundary Line Mask", boundary["debug_mask"])
 
-        if cv2.waitKey(1) == 27:
+        key = cv2.waitKey(1)
+
+        if key == 27:
+            stop_all()
             break
 
     cap.release()
