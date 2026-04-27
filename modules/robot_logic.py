@@ -7,7 +7,7 @@ from modules.color_profile_utils import detect_target_color
 from modules.boundary_detection import detect_boundary_line
 from modules.motor_control import execute_action, stop_all
 from modules.mission_control import MissionController
-from modules.gesture_detection import detect_finger_count
+from modules.gesture_detection import HandGestureDetector
 
 
 def decide_action(*args):
@@ -117,11 +117,21 @@ def handle_mode_key(key, mission, action_history):
         print("MODE 3 aktiviert")
 
 
-def handle_gesture_mode(frame, mission, action_history, gesture_buffer, gesture_mode_locked):
+def handle_gesture_mode(
+    frame,
+    mission,
+    action_history,
+    gesture_buffer,
+    gesture_mode_locked,
+    gesture_detector
+):
     if gesture_mode_locked:
         return gesture_mode_locked, 0
 
-    fingers = detect_finger_count(frame)
+    fingers, hand_landmarks = gesture_detector.count_fingers(frame)
+
+    if hand_landmarks:
+        gesture_detector.draw_hand(frame, hand_landmarks)
 
     if fingers in [1, 2, 3]:
         gesture_buffer.append(fingers)
@@ -155,10 +165,11 @@ def run_robot_logic():
     action_history = []
     gesture_buffer = []
     gesture_mode_locked = False
+    gesture_detector = HandGestureDetector()
     last_fingers = 0
 
     mission = MissionController()
-    mission.set_mode(2)  # Default: rot -> blau, später durch Geste ersetzt
+    mission.set_mode(2)
 
     while True:
         ret, frame = cap.read()
@@ -175,7 +186,8 @@ def run_robot_logic():
             mission,
             action_history,
             gesture_buffer,
-            gesture_mode_locked
+            gesture_mode_locked,
+            gesture_detector
         )
 
         current_target_name = mission.get_current_target()

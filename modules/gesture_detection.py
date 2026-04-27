@@ -1,41 +1,54 @@
 import cv2
-import numpy as np
+import mediapipe as mp
 
 
-def detect_finger_count(frame):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+class HandGestureDetector:
+    def __init__(self):
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=1,
+            min_detection_confidence=0.6,
+            min_tracking_confidence=0.6
+        )
+        self.mp_draw = mp.solutions.drawing_utils
 
-    # Hautbereich (einfach gehalten)
-    lower = np.array([0, 30, 60])
-    upper = np.array([20, 150, 255])
+    def count_fingers(self, frame):
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        result = self.hands.process(frame_rgb)
 
-    mask = cv2.inRange(hsv, lower, upper)
+        if not result.multi_hand_landmarks:
+            return 0, None
 
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        hand_landmarks = result.multi_hand_landmarks[0]
+        lm = hand_landmarks.landmark
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        fingers = []
 
-    if not contours:
-        return 0
+        # Daumen
+        if lm[4].x < lm[3].x:
+            fingers.append(1)
+        else:
+            fingers.append(0)
 
-    biggest = max(contours, key=cv2.contourArea)
+        # Zeige-, Mittel-, Ring-, kleiner Finger
+        finger_tips = [8, 12, 16, 20]
+        finger_pips = [6, 10, 14, 18]
 
-    if cv2.contourArea(biggest) < 2000:
-        return 0
+        for tip, pip in zip(finger_tips, finger_pips):
+            if lm[tip].y < lm[pip].y:
+                fingers.append(1)
+            else:
+                fingers.append(0)
 
-    hull = cv2.convexHull(biggest)
-    defects = cv2.convexityDefects(biggest, cv2.convexHull(biggest, returnPoints=False))
+        count = sum(fingers)
 
-    if defects is None:
-        return 1
+        return count, hand_landmarks
 
-    count = 0
-
-    for i in range(defects.shape[0]):
-        s, e, f, d = defects[i][0]
-
-        if d > 10000:
-            count += 1
-
-    return count + 1
+    def draw_hand(self, frame, hand_landmarks):
+        if hand_landmarks:
+            self.mp_draw.draw_landmarks(
+                frame,
+                hand_landmarks,
+                self.mp_hands.HAND_CONNECTIONS
+            )
