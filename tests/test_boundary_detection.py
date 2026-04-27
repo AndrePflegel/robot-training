@@ -1,6 +1,6 @@
 import cv2
 from modules.profile_loader import load_profiles, get_active_profile
-from modules.color_profile_utils import detect_boundary_color
+from modules.boundary_detection import detect_boundary_line
 
 
 def run_test_boundary_detection():
@@ -20,6 +20,7 @@ def run_test_boundary_detection():
 
     while True:
         ret, frame = cap.read()
+
         if not ret:
             print("Keine Kamera")
             break
@@ -27,21 +28,28 @@ def run_test_boundary_detection():
         height, width = frame.shape[:2]
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        result = detect_boundary_color(hsv, width, height, boundary_color)
+        result = detect_boundary_line(hsv, width, height, boundary_color)
 
-        roi_y = result.get("roi_start_y", int(height * 0.50))
-
-        # ROI-Bereich anzeigen
+        roi_y = result.get("roi_start_y", int(height * 0.35))
         cv2.rectangle(frame, (0, roi_y), (width, height), (255, 255, 255), 2)
 
         if result["found"]:
-            x, y, w, h = result["bbox"]
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
+            x1, y1, x2, y2 = result["line"]
 
-            text = f"BOUNDARY FOUND | area={int(result['area'])} | px={result['pixels']}"
+            cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 255), 4)
+
+            text = (
+                f"{result['line_type']} | "
+                f"{result['position']} | "
+                f"angle={int(result['angle'])} | "
+                f"lines={result['line_count']} | "
+                f"corner={result['is_corner']} | "
+                f"{result['suggested_action']}"
+            )
+
             color = (0, 255, 255)
         else:
-            text = f"BOUNDARY NOT FOUND | area={int(result['area'])} | px={result['pixels']}"
+            text = "NO BOUNDARY LINE"
             color = (0, 0, 255)
 
         cv2.putText(
@@ -49,16 +57,15 @@ def run_test_boundary_detection():
             text,
             (20, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
+            0.65,
             color,
             2
         )
 
-        cv2.imshow("Boundary Detection Test", frame)
+        cv2.imshow("Boundary Line Test", frame)
 
-        # Debug-Maske anzeigen: weiß = erkanntes Gelb
         if "debug_mask" in result:
-            cv2.imshow("Boundary Mask", result["debug_mask"])
+            cv2.imshow("Boundary Line Mask", result["debug_mask"])
 
         if cv2.waitKey(1) & 0xFF == 27:
             break
