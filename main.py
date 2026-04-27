@@ -9,6 +9,7 @@ from modules.tuning_panel import run_tuning_panel
 from modules.tuning_gui import run_tuning_gui
 from modules.profile_viewer import run_profile_viewer
 from tests.test_target_detection import run_test_target_detection
+from tests.test_boundary_detection import run_test_boundary_detection
 
 def print_menu():
 	print()
@@ -24,6 +25,7 @@ def print_menu():
 	print("8 - Tuning Panel Farben")
 	print("9 - Aktives Profil anzeigen")
 	print("10 - Target Detection Test")
+	print("11 - Boundary Detection Test")
 	print("0 - Beenden")
 	print()
 
@@ -64,6 +66,8 @@ def main():
 		    run_profile_viewer()
 		elif choice == "10":
 		    run_test_target_detection()
+		elif choice == "11":
+		    run_test_boundary_detection()
 		elif choice == "0":
 			print("Programm beendet.")
 			break

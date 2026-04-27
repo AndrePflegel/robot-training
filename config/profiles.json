@@ -30,7 +30,13 @@
           "lower": [40, 70, 70],
           "upper": [80, 255, 255],
           "action": "GO"
-        }
+        },
+	{
+	  "name": "yellow",
+	  "action": "boundary",
+	  "lower": [15, 60, 60],
+	  "upper": [40, 255, 255]
+	}
       ],
 
       "models": {
