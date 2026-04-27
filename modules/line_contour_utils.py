@@ -1,6 +1,6 @@
 import cv2
 
-def get_biggest_valid_contour(contours, min_area=800):
+def get_biggest_valid_contour(contours, min_area=1500):
     if not contours:
         return None
 
